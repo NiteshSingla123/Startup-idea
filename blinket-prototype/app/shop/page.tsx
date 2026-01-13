@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { nanoid } from "nanoid";
 
 const SHOP_ID = "11111111-1111-1111-1111-111111111111";
 
@@ -92,11 +93,14 @@ export default function ShopPage() {
   // ACCEPT ORDER
   // =========================
   async function acceptOrder(orderId: string) {
+    const token = nanoid(16);
+
     const { data } = await supabase
       .from("orders")
       .update({
         status: "accepted",
         accepted_by: SHOP_ID,
+        delivery_token: token,
       })
       .eq("id", orderId)
       .eq("status", "pending")
@@ -108,9 +112,11 @@ export default function ShopPage() {
       return;
     }
 
-    // Instant UI update
+    const deliveryLink = `${window.location.origin}/deliver/${token}`;
+    alert(`Share this link with delivery boy:\n${deliveryLink}`);
+
     setPendingOrders((prev) =>
-      prev.filter((order) => order.id !== orderId)
+      prev.filter((o) => o.id !== orderId)
     );
     setMyOrders((prev) => [...prev, data]);
   }
