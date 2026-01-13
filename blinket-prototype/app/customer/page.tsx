@@ -37,28 +37,29 @@ export default function CustomerPage() {
   }
 
   useEffect(() => {
-    if (!order) return;
+    if (!order?.id) return;
 
-    const channel = supabase
-      .channel("order-status")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "orders",
-          filter: `id=eq.${order.id}`,
-        },
-        (payload) => {
-          setOrder(payload.new);
-        }
-      )
-      .subscribe();
+    async function fetchOrderStatus() {
+      const { data } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", order.id)
+        .single();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [order]);
+      if (data) {
+        setOrder(data);
+      }
+    }
+
+    // Fetch immediately
+    fetchOrderStatus();
+
+    // Poll every 2 seconds
+    const interval = setInterval(fetchOrderStatus, 2000);
+
+    return () => clearInterval(interval);
+  }, [order?.id]);
+
 
   return (
     <div className="p-6">
